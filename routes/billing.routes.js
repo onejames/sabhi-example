@@ -11,32 +11,34 @@ const asyncHandler = require('../middleware/async-handler');
 const validate = require('../middleware/validate');
 const authRequired = require('../middleware/auth');
 const requirePermissions = require('../middleware/rbac');
+const idempotencyMiddleware = require('../middleware/idempotency');
+const rateLimitByFingerprint = require('../middleware/rateLimitByFingerprint');
 
 const billingController = require('../controllers/billing.controller');
 
-const CURRENCY_KEYS = require('../constants/currency');
+const { CURRENCY_KEYS } = require('../constants/currency');
 
 router.get(
-  '/billing/plans',
+  '/plans',
   asyncHandler(billingController.listPlans)
 );
 
 router.get(
-  '/billing/subscription',
+  '/subscription',
   authRequired,
   requirePermissions('billing.manage'),
   asyncHandler(billingController.getBillingSubscription)
 );
 
 router.get(
-  '/billing',
+  '/',
   authRequired,
   requirePermissions('billing.manage'),
   asyncHandler(billingController.listPayments)
 );
 
 router.post(
-  '/billing/request',
+  '/request',
   authRequired,
   requirePermissions('billing.manage'),
   validate(
@@ -53,8 +55,9 @@ router.post(
 );
 
 router.post(
-  '/billing/checkout-session',
+  '/checkout-session',
   authRequired,
+  idempotencyMiddleware,
   validate(
     z.object({
       priceId: z.string().min(1),
@@ -66,8 +69,9 @@ router.post(
 );
 
 router.post(
-  '/billing/onboarding/checkout-session',
+  '/onboarding/checkout-session',
   rateLimitByFingerprint({ max: 5 }),
+  idempotencyMiddleware,
   validate(
     z.object({
       priceId: z.string().min(1),
@@ -81,8 +85,9 @@ router.post(
 );
 
 router.post(
-  '/billing/onboarding/verify-checkout',
+  '/onboarding/verify-checkout',
   rateLimitByFingerprint({ max: 10 }),
+  idempotencyMiddleware,
   validate(
     z.object({
       sessionId: z.string().min(1),

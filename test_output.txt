@@ -1,0 +1,33 @@
+
+> test
+> jest
+
+FAIL routes/billing.routes.test.js
+  ● Test suite failed to run
+
+    TypeError: argument handler must be a function
+
+      55 | );
+      56 |
+    > 57 | router.post(
+         |        ^
+      58 |   '/checkout-session',
+      59 |   authRequired,
+      60 |   idempotencyMiddleware,
+
+      at Route.<computed> [as post] (node_modules/router/lib/route.js:228:15)
+      at router.Router.<computed> [as post] (node_modules/router/index.js:448:19)
+      at Object.post (routes/billing.routes.js:57:8)
+      at Object.require (app.js:5:21)
+      at Object.require (routes/billing.routes.test.js:2:13)
+
+----------|---------|----------|---------|---------|-------------------
+File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------|---------|----------|---------|---------|-------------------
+All files |       0 |        0 |       0 |       0 |                   
+----------|---------|----------|---------|---------|-------------------
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.246 s
+Ran all test suites.

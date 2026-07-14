@@ -22,6 +22,7 @@ const enforcePublicSafety = (options = { windowMs: 15 * 60 * 1000, max: 10 }) =>
     max: options.max,
     message: 'Too many requests, please try again later.',
     keyGenerator: (req) => req.headers['cf-connecting-ip'] || req.ip,
+    validate: { keyGeneratorIpFallback: false }
   });
 };
 

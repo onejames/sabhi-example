@@ -1,0 +1,5 @@
+// Node folders
+node_modules
+
+// Test results
+/coverage

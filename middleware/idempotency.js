@@ -33,12 +33,24 @@ const idempotencyMiddleware = async (req, res, next) => {
     return res.status(200).json({ status: 'already_processed' });
   }
 
-  // Set an "in-flight" lock
+  // If the controller previously cached data under this key, return it
+  if (value && value !== 'FAILED') {
+    return res.status(200).json(value);
+  }
+
+  // Set the "in-flight" lock
   await store.set(key, 'PROCESSING');
   
-  // Capture response to cache on success
   res.on('finish', async () => {
-    if (res.statusCode === 200 || res.statusCode === 201) {
+    const currentValue = await store.get(key);
+    // Only update if the controller didn't write its own cached value
+    if (currentValue === 'PROCESSING') {
+      if (res.statusCode === 200 || res.statusCode === 201) {
+        await store.set(key, 'FINISHED');
+      } else {
+        await store.set(key, 'FAILED');
+      }
+
       // This is assuming that if there is data - that has not expired - that is not PROCESSING or FINISHED 
       // then its intentional data for this client response
       return value;
@@ -47,3 +59,5 @@ const idempotencyMiddleware = async (req, res, next) => {
 
   next();
 };
+
+module.exports = idempotencyMiddleware

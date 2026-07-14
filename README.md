@@ -1,22 +1,39 @@
-# My inital review of the file:
 
-## Security & Authorization (Critical)
+### 1. README.md
 
-* Missing RBAC on critical endpoints: Notice that /billing/onboarding/checkout-session and /billing/onboarding/verify-checkout lack authRequired and requirePermissions. While "onboarding" implies a user might not be logged in yet, these endpoints are prime targets for automated abuse or fraudulent account creation.
+# Billing API Service
 
-* Parameter Injection/Manipulation: In /billing/request, amountCents is passed directly from the client. Never trust client-side math for payments. You should be passing a priceId or productId and looking up the cost on the server side to prevent a user from charging themselves $0.01 for a $1000 item.
+This repository provides a robust Node.js/Express implementation for B2B SaaS billing flows, focusing on production-grade security, request integrity, and financial idempotency.
 
-## API Design & Data Integrity
+## Quick Start
+1. **Install dependencies:**
+   npm install
 
-* Idempotency: Payment endpoints (/billing/request, checkout sessions) are high-risk. If a client retries due to a network glitch, do they get charged twice? There is no mention of Idempotency-Key headers in this route file.
+## Start the server:
 
-* Currency Precision: The schema allows currency to be a generic string. You likely need a whitelist/enum for supported currencies (e.g., USD, EUR) rather than allowing any 3-character string, which could cause issues with your payment provider.
+npm run start
 
-## Maintenance & Architecture
-* Route Bloat: The router is getting heavy. As this grows, it should be broken down into sub-routers (e.g., onboarding.routes.js, subscription.routes.js) to keep the files manageable and clean.
+## Security Architecture
+This API is designed to sit behind a proxy (e.g., Cloudflare).
 
-This review of the file was ~20min
+Public Route Protection: Onboarding endpoints are secured via enforcePublicSafety (Rate Limiting).
 
-Implementing a simple fix assuming all the supporting code was already written ~15 min. Implementing the corrrect "tools in the API toolbox" so to speak.
+RBAC: Secured endpoints utilize authRequired and requirePermissions middleware.
 
-Implementing idempotency middleware with a little best practices research and some fiddling was ~30 min.
+Financial Integrity: All payment-related POST requests mandate an Idempotency-Key header.
+
+## Idempotency Implementation
+This service uses a "Guard-and-Commit" pattern via a lightweight in-memory store.
+
+Lifecycle: PROCESSING (Lock) → FINISHED (Commit).
+
+Behavior: * If a request is PROCESSING, the API returns a 409 Conflict.
+
+If a request is FINISHED, the API returns the cached transaction state.
+
+## Development & Testing
+Tests are colocated with the source code.
+
+Running the suite: npm test
+
+Test Harness: Uses jest and supertest for isolated integration testing.
