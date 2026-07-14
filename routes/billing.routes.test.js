@@ -230,7 +230,7 @@ describe('Billing API', () => {
 
   describe('POST /billing/onboarding/verify-checkout', () => {
     it('should verify checkout and support idempotency', async () => {
-      const payload = { sessionId: 'session_abc' };
+      const payload = { sessionId: 'session_abc', planKey: 'starter' };
       const idempotencyKey = 'key-verify-1';
 
       // First call
@@ -240,6 +240,7 @@ describe('Billing API', () => {
         .send(payload);
       expect(res1.statusCode).toBe(200);
       expect(res1.body.verified).toBe(true);
+      expect(res1.body.plan).toBe('starter');
 
       // Second call (duplicate)
       const res2 = await request(app)
@@ -265,6 +266,144 @@ describe('Billing API', () => {
       const val = await store.get(key);
       expect(val).toBeNull();
       expect(store.cache.has(key)).toBe(false);
+    });
+  });
+
+  describe('Model Unit Tests', () => {
+    const planModel = require('../models/plan.model');
+    const subscriptionModel = require('../models/subscription.model');
+    const paymentModel = require('../models/payment.model');
+    const paymentRequestModel = require('../models/paymentRequest.model');
+    const checkoutSessionModel = require('../models/checkoutSession.model');
+
+    it('should test plan model helpers', () => {
+      expect(planModel.getKeys()).toEqual(['starter', 'growth', 'pro']);
+    });
+
+    it('should test subscription model with fallbacks and custom plans', () => {
+      const sub = subscriptionModel.createSubscription(null, 'pro');
+      expect(sub.userId).toBe('user_123');
+      expect(sub.sabhiScoreEnabled).toBe(true);
+    });
+
+    it('should test subscription model default plan fallback', () => {
+      const sub = subscriptionModel.createSubscription('some-user');
+      expect(sub.planId).toBe('growth');
+      expect(sub.sabhiScoreEnabled).toBe(false);
+    });
+
+    it('should test payment model custom attributes', () => {
+      const pay = paymentModel.createPayment({
+        amountCents: 20000,
+        currency: 'EUR',
+        status: 'failed',
+        provider: 'manual',
+        paymentMethod: 'bank',
+        metadata: { info: 'payout' }
+      });
+      expect(pay.amountCents).toBe(20000);
+      expect(pay.currency).toBe('EUR');
+      expect(pay.status).toBe('failed');
+      expect(pay.provider).toBe('manual');
+      expect(pay.paymentMethod).toBe('bank');
+      expect(pay.metadata).toEqual({ info: 'payout' });
+    });
+
+    it('should test payment model default parameters', () => {
+      const pay = paymentModel.createPayment();
+      expect(pay.amountCents).toBe(15000);
+      expect(pay.currency).toBe('USD');
+      expect(pay.status).toBe('succeeded');
+      expect(pay.provider).toBe('stripe');
+      expect(pay.paymentMethod).toBe('card');
+      expect(pay.metadata).toHaveProperty('item');
+    });
+
+    it('should test paymentRequest model custom attributes', () => {
+      const reqData = paymentRequestModel.createPaymentRequest({
+        contactId: 'contact-uuid-123',
+        invoiceId: 'invoice-uuid-456',
+        amountCents: 300,
+        currency: 'GBP',
+        provider: 'manual',
+        metadata: { notes: 'manual billing' }
+      });
+      expect(reqData.contactId).toBe('contact-uuid-123');
+      expect(reqData.invoiceId).toBe('invoice-uuid-456');
+      expect(reqData.amountCents).toBe(300);
+      expect(reqData.currency).toBe('GBP');
+      expect(reqData.provider).toBe('manual');
+      expect(reqData.metadata).toEqual({ notes: 'manual billing' });
+    });
+
+    it('should test paymentRequest model default parameters', () => {
+      const reqData = paymentRequestModel.createPaymentRequest();
+      expect(reqData.amountCents).toBe(50000);
+      expect(reqData.currency).toBe('USD');
+      expect(reqData.provider).toBe('stripe');
+    });
+
+    it('should test checkoutSession model onboarding and custom paths', () => {
+      const session = checkoutSessionModel.createCheckoutSession({
+        priceId: 'price_pro',
+        email: 'user@paybuddy.com',
+        successPath: '/success',
+        cancelPath: '/cancel',
+        onboarding: true
+      });
+      expect(session.priceId).toBe('price_pro');
+      expect(session.email).toBe('user@paybuddy.com');
+      expect(session.successPath).toBe('/success');
+      expect(session.cancelPath).toBe('/cancel');
+      expect(session.url).toContain('https://checkout.stripe.com/onboarding');
+    });
+
+    it('should test checkoutSession model default parameters', () => {
+      const session = checkoutSessionModel.createCheckoutSession();
+      expect(session.priceId).toBe('price_growth');
+      expect(session.email).toBeNull();
+      expect(session.url).toContain('https://checkout.stripe.com/pay');
+    });
+  });
+
+  describe('Controller Unit Tests', () => {
+    const billingController = require('../controllers/billing.controller');
+
+    const mockRes = () => {
+      const res = {};
+      res.status = jest.fn().mockReturnValue(res);
+      res.json = jest.fn().mockReturnValue(res);
+      return res;
+    };
+
+    it('should test getBillingSubscription with no user context', async () => {
+      const res = mockRes();
+      await billingController.getBillingSubscription({}, res);
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should test createPaymentRequest with default parameters', async () => {
+      const res = mockRes();
+      await billingController.createPaymentRequest({ body: {} }, res);
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should test createSubscriptionCheckoutSession with default parameters', async () => {
+      const res = mockRes();
+      await billingController.createSubscriptionCheckoutSession({ body: {} }, res);
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should test createOnboardingCheckoutSession with default parameters', async () => {
+      const res = mockRes();
+      await billingController.createOnboardingCheckoutSession({ body: {} }, res);
+      expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('should test verifyOnboardingCheckoutSession with default parameters', async () => {
+      const res = mockRes();
+      await billingController.verifyOnboardingCheckoutSession({ body: {} }, res);
+      expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 });

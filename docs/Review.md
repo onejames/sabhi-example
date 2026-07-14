@@ -21,7 +21,7 @@ Implementing a simple fix assuming all the supporting code was already written ~
 
 Implementing idempotency middleware with a little best practices research and some fiddling was ~30 min.
 
-Siupporting server and testing, as well as messing with my inital errors was ~
+Siupporting server and testing, as well as messing with my inital errors was ~2H.
 
 ## NOTES and thoughts:
 

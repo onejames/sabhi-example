@@ -11,7 +11,7 @@ This repository provides a robust Node.js/Express implementation for B2B SaaS bi
 
 ## Start the server:
 
-npm run start
+`npm run start`
 
 ## Security Architecture
 This API is designed to sit behind a proxy (e.g., Cloudflare).
@@ -34,6 +34,7 @@ If a request is FINISHED, the API returns the cached transaction state.
 ## Development & Testing
 Tests are colocated with the source code.
 
-Running the suite: npm test
+Running the suite: `npm test`
+There is a script to validate everything from the outside (e2e testing) `npm run route-test`
 
 Test Harness: Uses jest and supertest for isolated integration testing.
