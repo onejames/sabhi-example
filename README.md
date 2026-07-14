@@ -17,4 +17,6 @@
 
 This review of the file was ~20min
 
-Implementing a simple fix assuming all the supporting code was already written ~5 min. Implementing the corrrect "tools in the API toolbox" so to speak.
+Implementing a simple fix assuming all the supporting code was already written ~15 min. Implementing the corrrect "tools in the API toolbox" so to speak.
+
+Implementing idempotency middleware with a little best practices research and some fiddling was ~30 min.
