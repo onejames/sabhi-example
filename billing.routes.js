@@ -1,12 +1,20 @@
+/**
+ * Billing routes
+ */
+
 const express = require('express');
+const router = express.Router();
+
 const { z } = require('zod');
-const billingController = require('../controllers/billing.controller');
+
 const asyncHandler = require('../middleware/async-handler');
 const validate = require('../middleware/validate');
 const authRequired = require('../middleware/auth');
 const requirePermissions = require('../middleware/rbac');
 
-const router = express.Router();
+const billingController = require('../controllers/billing.controller');
+
+const CURRENCY_KEYS = require('../constants/currency');
 
 router.get(
   '/billing/plans',
@@ -36,7 +44,7 @@ router.post(
       contactId: z.string().uuid().optional(),
       invoiceId: z.string().uuid().optional(),
       amountCents: z.number().int().positive(),
-      currency: z.string().length(3).default('USD'),
+      currency: z.enum(CURRENCY_KEYS).default('USD'),
       provider: z.enum(['stripe', 'manual']).default('stripe'),
       metadata: z.record(z.any()).optional(),
     })
@@ -59,6 +67,7 @@ router.post(
 
 router.post(
   '/billing/onboarding/checkout-session',
+  rateLimitByFingerprint({ max: 5 }),
   validate(
     z.object({
       priceId: z.string().min(1),
@@ -73,6 +82,7 @@ router.post(
 
 router.post(
   '/billing/onboarding/verify-checkout',
+  rateLimitByFingerprint({ max: 10 }),
   validate(
     z.object({
       sessionId: z.string().min(1),
