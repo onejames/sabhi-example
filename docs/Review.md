@@ -30,3 +30,5 @@ While typescript is a pain in a lot of ways, it does a good job of removing a ot
 My filenames should be updated from camel-case to the "." notation that seem to be used.
 
 Removed the prefix "/billing" from all routs, this is redundant and prone to typos imho.
+
+Ran through some additional supporting features to watch it be used like it would really be used. Maybe spent an hour on it, this was mostly agent-generated. NOTE: i did not neccessairly review all of the authentication and authorization code for its 100% compliance and security as it was out side of the scope of this example. If any of that code would need to be used in prod a full review would be needed.
